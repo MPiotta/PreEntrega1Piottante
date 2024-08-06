@@ -27,42 +27,46 @@ class Credito {
 }
 
 // Array para almacenar créditos aprobados
-let creditosAprobados = [];
+let creditosAprobados =
+  JSON.parse(localStorage.getItem("creditosAprobados")) || [];
 
 // Función principal para simular el crédito
-function simularCredito() {
-  let edad = parseInt(prompt("Ingrese su edad:"));
-  let nacionalidad = prompt("Ingrese su nacionalidad:");
-  let monto = parseFloat(
-    prompt("Ingrese el monto del crédito en pesos (máximo 20.000):")
-  );
+function simularCredito(event) {
+  event.preventDefault();
+
+  let edad = parseInt(document.getElementById("edad").value);
+  let nacionalidad = document.getElementById("nacionalidad").value;
+  let monto = parseFloat(document.getElementById("monto").value);
 
   // Validar edad y nacionalidad
   if (!esMayorDeEdad(edad)) {
-    alert("Debe ser mayor de 18 años para solicitar un crédito.");
+    mostrarResultado("Debe ser mayor de 18 años para solicitar un crédito.");
     return;
   }
   if (!esArgentino(nacionalidad)) {
-    alert("Debe ser argentino para solicitar un crédito.");
+    mostrarResultado("Debe ser argentino para solicitar un crédito.");
     return;
   }
   if (isNaN(monto) || monto <= 0 || monto > maxMonto) {
-    alert("El monto debe ser mayor a 0 y no puede exceder los 20.000 pesos.");
+    mostrarResultado(
+      "El monto debe ser mayor a 0 y no puede exceder los 20.000 pesos."
+    );
     return;
   }
 
   // Crear y almacenar el crédito aprobado
   let credito = new Credito(monto, maxCuotas);
   creditosAprobados.push(credito);
+  localStorage.setItem("creditosAprobados", JSON.stringify(creditosAprobados));
 
   // Mostrar resultados en el navegador
-  document.getElementById("resultado").innerHTML = `
+  mostrarResultado(`
         <h2>Crédito aprobado</h2>
         <p>Monto solicitado: $${credito.monto.toFixed(2)}</p>
         <p>Cuota mensual (6 meses sin interés): $${credito.cuotaMensual.toFixed(
           2
         )}</p>
-    `;
+    `);
 
   // Mostrar resultados en la consola
   console.log(
@@ -74,18 +78,30 @@ function simularCredito() {
   );
 }
 
-// Ejemplo de filtrado: créditos mayores a 10.000 pesos
-function filtrarCreditosGrandes() {
-  return creditosAprobados.filter((credito) => credito.monto > 10000);
+// Función para mostrar resultados en el DOM
+function mostrarResultado(mensaje) {
+  document.getElementById("resultado").innerHTML = mensaje;
 }
 
-// Ejecutar filtrado y mostrar resultados en la consola
-let creditosGrandes = filtrarCreditosGrandes();
-console.log("Créditos mayores a 10.000 pesos:");
-creditosGrandes.forEach((credito) =>
-  console.log(
-    `Monto: $${credito.monto.toFixed(2)}, Cuotas: ${
-      credito.cuotas
-    }, Cuota mensual: $${credito.cuotaMensual.toFixed(2)}`
-  )
-);
+// Capturar el evento del formulario
+document
+  .getElementById("formularioCredito")
+  .addEventListener("submit", simularCredito);
+
+// Función para mostrar créditos mayores a 10.000 pesos
+function mostrarCreditosGrandes() {
+  let creditosGrandes = creditosAprobados.filter(
+    (credito) => credito.monto > 10000
+  );
+  console.log("Créditos mayores a 10.000 pesos:");
+  creditosGrandes.forEach((credito) =>
+    console.log(
+      `Monto: $${credito.monto.toFixed(2)}, Cuotas: ${
+        credito.cuotas
+      }, Cuota mensual: $${credito.cuotaMensual.toFixed(2)}`
+    )
+  );
+}
+
+// Mostrar créditos grandes al cargar la página
+mostrarCreditosGrandes();
