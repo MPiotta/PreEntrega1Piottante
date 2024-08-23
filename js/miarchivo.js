@@ -1,6 +1,6 @@
-// Variables
-const maxMonto = 20000;
-const maxCuotas = 6;
+// Estructura de datos: Array de objetos para almacenar los créditos
+let creditosAprobados =
+  JSON.parse(localStorage.getItem("creditosAprobados")) || [];
 
 // Función para validar la edad del usuario
 function esMayorDeEdad(edad) {
@@ -26,10 +26,6 @@ class Credito {
   }
 }
 
-// Array para almacenar créditos aprobados
-let creditosAprobados =
-  JSON.parse(localStorage.getItem("creditosAprobados")) || [];
-
 // Función principal para simular el crédito
 function simularCredito(event) {
   event.preventDefault();
@@ -40,33 +36,27 @@ function simularCredito(event) {
 
   // Validar edad y nacionalidad
   if (!esMayorDeEdad(edad)) {
-    mostrarResultado("Debe ser mayor de 18 años para solicitar un crédito.");
+    mostrarAlerta("Debe ser mayor de 18 años para solicitar un crédito.");
     return;
   }
   if (!esArgentino(nacionalidad)) {
-    mostrarResultado("Debe ser argentino para solicitar un crédito.");
+    mostrarAlerta("Debe ser argentino para solicitar un crédito.");
     return;
   }
-  if (isNaN(monto) || monto <= 0 || monto > maxMonto) {
-    mostrarResultado(
+  if (isNaN(monto) || monto <= 0 || monto > 20000) {
+    mostrarAlerta(
       "El monto debe ser mayor a 0 y no puede exceder los 20.000 pesos."
     );
     return;
   }
 
   // Crear y almacenar el crédito aprobado
-  let credito = new Credito(monto, maxCuotas);
+  let credito = new Credito(monto, 6); // Asumimos que siempre son 6 cuotas
   creditosAprobados.push(credito);
   localStorage.setItem("creditosAprobados", JSON.stringify(creditosAprobados));
 
-  // Mostrar resultados en el navegador
-  mostrarResultado(`
-        <h2>Crédito aprobado</h2>
-        <p>Monto solicitado: $${credito.monto.toFixed(2)}</p>
-        <p>Cuota mensual (6 meses sin interés): $${credito.cuotaMensual.toFixed(
-          2
-        )}</p>
-    `);
+  // Mostrar resultados en el navegador con animación
+  generarResultadoHTML(credito);
 
   // Mostrar resultados en la consola
   console.log(
@@ -78,9 +68,25 @@ function simularCredito(event) {
   );
 }
 
-// Función para mostrar resultados en el DOM
-function mostrarResultado(mensaje) {
-  document.getElementById("resultado").innerHTML = mensaje;
+// Función para mostrar alertas usando SweetAlert2
+function mostrarAlerta(mensaje) {
+  Swal.fire({
+    icon: "warning",
+    title: "Oops...",
+    text: mensaje,
+  });
+}
+
+// Función para generar el HTML de resultados dinámicamente con animación
+function generarResultadoHTML(credito) {
+  const resultadoDiv = document.getElementById("resultado");
+  resultadoDiv.innerHTML = `
+        <h2 class="animate__animated animate__fadeIn">Crédito aprobado</h2>
+        <p>Monto solicitado: $${credito.monto.toFixed(2)}</p>
+        <p>Cuota mensual (6 meses sin interés): $${credito.cuotaMensual.toFixed(
+          2
+        )}</p>
+    `;
 }
 
 // Capturar el evento del formulario
@@ -88,20 +94,32 @@ document
   .getElementById("formularioCredito")
   .addEventListener("submit", simularCredito);
 
-// Función para mostrar créditos mayores a 10.000 pesos
-function mostrarCreditosGrandes() {
-  let creditosGrandes = creditosAprobados.filter(
-    (credito) => credito.monto > 10000
-  );
-  console.log("Créditos mayores a 10.000 pesos:");
-  creditosGrandes.forEach((credito) =>
-    console.log(
-      `Monto: $${credito.monto.toFixed(2)}, Cuotas: ${
-        credito.cuotas
-      }, Cuota mensual: $${credito.cuotaMensual.toFixed(2)}`
-    )
-  );
+// Carga de datos desde un JSON local o API externa usando fetch y manejo de promesas
+async function cargarDatosExternos() {
+  try {
+    const response = await fetch("data/creditos.json"); // Ruta del archivo JSON local
+    if (!response.ok) {
+      throw new Error("Error al cargar el JSON");
+    }
+    const datosExternos = await response.json();
+
+    // Procesar los datos cargados
+    datosExternos.forEach((credito) => {
+      creditosAprobados.push(new Credito(credito.monto, credito.cuotas));
+    });
+
+    localStorage.setItem(
+      "creditosAprobados",
+      JSON.stringify(creditosAprobados)
+    );
+    console.log("Datos cargados y procesados desde JSON local o API externa");
+  } catch (error) {
+    console.error("Error al cargar los datos externos:", error);
+    mostrarAlerta(
+      "Hubo un problema al cargar los datos. Inténtelo de nuevo más tarde."
+    );
+  }
 }
 
-// Mostrar créditos grandes al cargar la página
-mostrarCreditosGrandes();
+// Ejecutar la carga de datos externos al cargar la página
+cargarDatosExternos();
